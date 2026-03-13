@@ -22,7 +22,7 @@ def health():
 @app.post("/analyze", response_model=RepoReport)
 def analyze(req: AnalyzeRequest):
     try:
-        # keep JSON endpoint simple
+        # keep JSON endpoint simple.
         return analyze_repo(str(req.repo_url), model_override=req.model)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
