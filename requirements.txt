@@ -5,3 +5,4 @@ gitpython
 python-dotenv
 requests
 google-generativeai  # optional: only needed when LLM_PROVIDER=gemini
+mcp                  # MCP server support

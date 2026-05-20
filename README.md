@@ -119,6 +119,39 @@ Set `RESPONSE_MODE` in `.env`:
 
 ---
 
+## MCP Server (Claude Code Integration)
+
+RepoSensei can run as an MCP server, letting you analyze repos directly from Claude Code without opening the browser.
+
+### Connect to Claude Code
+
+```bash
+claude mcp add reposensei \
+  -e LLM_PROVIDER=ollama \
+  -e OLLAMA_HOST=http://127.0.0.1:11434 \
+  -e OLLAMA_MODEL=qwen2.5:14b-instruct \
+  -- /absolute/path/to/.venv/bin/python /absolute/path/to/mcp_server.py
+```
+
+### Usage in Claude Code
+
+Once connected, just ask Claude naturally:
+
+```
+Analyze https://github.com/user/repo for me
+```
+
+Claude will call the `analyze_repository` tool and return the full architecture breakdown inline.
+
+### Tool parameters
+
+| Parameter  | Type                | Description                         |
+| ---------- | ------------------- | ----------------------------------- |
+| `repo_url` | string              | Public GitHub URL to analyze        |
+| `format`   | `markdown` / `json` | Output format (default: `markdown`) |
+
+---
+
 ## API Endpoints
 
 | Endpoint           | Method | Description                              |
