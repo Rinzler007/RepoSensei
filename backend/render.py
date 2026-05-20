@@ -5,7 +5,7 @@ from backend.schemas import RepoReport
 
 def to_architecture_md(r: RepoReport, signals: dict | None = None) -> str:
     lines: list[str] = []
-    lines.append(f"# Architecture — {r.repo_name}\n")
+    lines.append(f"# Architecture: {r.repo_name}\n")
 
     # ---------------- Overview ----------------
     lines.append("## Overview\n")

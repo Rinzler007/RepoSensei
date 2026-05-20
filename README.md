@@ -39,9 +39,19 @@ Because we have all opened a new repo and thought: **"Where do I even start ?"**
 
 ### 1. Install Ollama
 
+**MacOS:**
+
 ```bash
 brew install ollama
 ```
+
+**Windows:**
+
+```powershell
+winget install Ollama.Ollama
+```
+
+Or download the installer directly from [ollama.com/download](https://ollama.com/download).
 
 ### 2. Pull a model
 
@@ -154,17 +164,30 @@ Claude will call the `analyze_repository` tool and return the full architecture 
 
 ## API Endpoints
 
-| Endpoint           | Method | Description                              |
-| ------------------ | ------ | ---------------------------------------- |
-| `/`                | GET    | Web UI                                   |
-| `/analyze`         | POST   | Returns a structured JSON report         |
-| `/architecture-md` | POST   | Returns a Markdown architecture document |
-| `/health`          | GET    | Health check                             |
+| Endpoint   | Method | Description                                               |
+| ---------- | ------ | --------------------------------------------------------- |
+| `/`        | GET    | Web UI                                                    |
+| `/analyze` | POST   | Returns structured JSON report + Markdown doc in one call |
+| `/health`  | GET    | Health check                                              |
 
 **Example request:**
 
 ```json
 {
   "repo_url": "https://github.com/user/repo"
+}
+```
+
+**Example response:**
+
+```json
+{
+  "report": {
+    "repo_name": "...",
+    "overview": "...",
+    "tech_stack": [],
+    "...": "..."
+  },
+  "md": "# Architecture - ...\n..."
 }
 ```

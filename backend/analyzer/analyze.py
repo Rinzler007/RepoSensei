@@ -67,7 +67,7 @@ def _sanitize_report_dict(data: dict, signals: dict, mode: str) -> dict:
                 cleaned.append(ts)
                 continue
 
-            # No evidence at all — strip it
+            # No evidence at all: strip it
             # (Only happens when LLM hallucinates something with zero grounding)
 
         seen: set[str] = set()
@@ -162,7 +162,7 @@ def _get_provider(model_override: str | None = None) -> tuple[LLMProvider, str]:
 
 
 def _system_instructions(mode: str) -> str:
-    base = """You are RepoSensei 🥋 — a staff-level software engineer who onboards developers onto unfamiliar repositories.
+    base = """You are RepoSensei, a staff-level software engineer who onboards developers onto unfamiliar repositories.
 
 Hard rules:
 - Do NOT invent routes, commands, features, or integrations.

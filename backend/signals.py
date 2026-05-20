@@ -139,7 +139,7 @@ def _iter_files(root: Path):
 def _extract_dependencies(root: Path) -> list[str]:
     """
     Extract raw dependency/package names from whatever manifest files exist.
-    No interpretation — just facts. The LLM handles what each dep means.
+    No interpretation, just facts. The LLM handles what each dep means.
     """
     deps: list[str] = []
     seen: set[str] = set()
@@ -165,7 +165,7 @@ def _extract_dependencies(root: Path) -> list[str]:
                     continue
                 add(re.split(r"[>=<!~^@\[\s;]", line)[0])
 
-    # --- pyproject.toml (Python, TOML — regex, no extra dep needed) ---
+    # --- pyproject.toml (Python, TOML: regex, no extra dep needed) ---
     fp = root / "pyproject.toml"
     if fp.exists():
         text = fp.read_text(errors="ignore")
@@ -309,7 +309,7 @@ def _extract_dependencies(root: Path) -> list[str]:
 
 
 def _detect_capability_from_deps(deps: list[str]) -> dict[str, list[str]]:
-    """Infer capabilities from dep names — no code scanning needed."""
+    """Infer capabilities from dep names: no code scanning needed."""
     dep_set = set(deps)
     evidence: dict[str, list[str]] = {}
     for cap, keywords in _CAPABILITY_KEYWORDS.items():
