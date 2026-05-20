@@ -1,4 +1,4 @@
-# RepoSensei 🥋
+# RepoSensei
 
 RepoSensei is an AI-powered codebase mentor that analyzes any public GitHub repository and explains:
 
@@ -9,7 +9,7 @@ RepoSensei is an AI-powered codebase mentor that analyzes any public GitHub repo
 - A Mermaid architecture diagram
 - An onboarding path for new developers
 
-Because we have all opened a new repo and thought: **"Where do I even start ?"** 😭
+Because we have all opened a new repo and thought: **"Where do I even start ?"**
 
 ---
 

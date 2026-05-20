@@ -640,9 +640,11 @@
 </div>
 
 <script>
+  // Cache for parallel results
+  let cache = { json: null, md: null, url: null };
+
   async function analyze() {
     const url = document.getElementById("repoUrl").value.trim();
-    const fmt = document.querySelector('input[name="fmt"]:checked').value;
     const btn = document.getElementById("analyzeBtn");
     const loader = document.getElementById("loader");
     const errorBox = document.getElementById("errorBox");
@@ -650,32 +652,38 @@
 
     if (!url) { shake(document.getElementById("repoUrl")); return; }
 
+    // Reset cache
+    cache = { json: null, md: null, url };
+
     btn.disabled = true;
     loader.style.display = "block";
     errorBox.style.display = "none";
     results.style.display = "none";
     results.innerHTML = "";
 
+    const body = JSON.stringify({ repo_url: url });
+    const headers = { "Content-Type": "application/json" };
+
     try {
-      const res = await fetch(fmt === "md" ? "/architecture-md" : "/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repo_url: url }),
-      });
+      // Fire both requests in parallel
+      const [jsonRes, mdRes] = await Promise.all([
+        fetch("/analyze",          { method: "POST", headers, body }),
+        fetch("/architecture-md",  { method: "POST", headers, body }),
+      ]);
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: res.statusText }));
-        throw new Error(err.detail || res.statusText);
+      if (!jsonRes.ok) {
+        const err = await jsonRes.json().catch(() => ({ detail: jsonRes.statusText }));
+        throw new Error(err.detail || jsonRes.statusText);
+      }
+      if (!mdRes.ok) {
+        const err = await mdRes.json().catch(() => ({ detail: mdRes.statusText }));
+        throw new Error(err.detail || mdRes.statusText);
       }
 
-      if (fmt === "md") {
-        const text = await res.text();
-        results.innerHTML = `<div class="section"><pre class="md-output">${escHtml(text)}</pre></div>`;
-      } else {
-        const data = await res.json();
-        results.innerHTML = renderReport(data, url);
-      }
+      cache.json = await jsonRes.json();
+      cache.md   = await mdRes.text();
 
+      showActiveTab(url);
       results.style.display = "block";
       results.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (e) {
@@ -686,6 +694,25 @@
       loader.style.display = "none";
     }
   }
+
+  function showActiveTab(url) {
+    const fmt = document.querySelector('input[name="fmt"]:checked').value;
+    const results = document.getElementById("results");
+    if (!cache.json && !cache.md) return;
+
+    if (fmt === "md" && cache.md) {
+      results.innerHTML = `<div class="section"><pre class="md-output">${escHtml(cache.md)}</pre></div>`;
+    } else if (fmt === "json" && cache.json) {
+      results.innerHTML = renderReport(cache.json, url || cache.url);
+    }
+  }
+
+  // Switch tabs instantly from cache
+  document.querySelectorAll('input[name="fmt"]').forEach(radio => {
+    radio.addEventListener("change", () => {
+      if (cache.json || cache.md) showActiveTab(cache.url);
+    });
+  });
 
   document.getElementById("repoUrl").addEventListener("keydown", e => {
     if (e.key === "Enter") analyze();
