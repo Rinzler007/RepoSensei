@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from reposensei.schemas import RepoReport
+from backend.schemas import RepoReport
 
 
 def to_architecture_md(r: RepoReport, signals: dict | None = None) -> str:

@@ -1,12 +1,19 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, HttpUrl
 
-from reposensei.analyzer.analyze import analyze_repo
-from reposensei.render import to_architecture_md
-from reposensei.schemas import RepoReport
+from backend.analyzer.analyze import analyze_repo
+from backend.render import to_architecture_md
+from backend.schemas import RepoReport
 
 app = FastAPI(title="RepoSensei 🥋", version="1.0.0")
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
+
+@app.get("/", include_in_schema=False)
+def index():
+    return FileResponse("frontend/index.html")
 
 
 class AnalyzeRequest(BaseModel):

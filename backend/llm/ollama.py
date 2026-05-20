@@ -1,5 +1,5 @@
 import requests
-from reposensei.llm.base import LLMProvider
+from backend.llm.base import LLMProvider
 
 
 class OllamaProvider(LLMProvider):

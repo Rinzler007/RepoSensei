@@ -1,3 +1,3 @@
 from .base import LLMProvider
 from .ollama import OllamaProvider
-from .openai_provider import OpenAIProvider
+from .gemini_provider import GeminiProvider

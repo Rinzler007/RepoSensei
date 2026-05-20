@@ -1,87 +1,137 @@
 # RepoSensei 🥋
 
-RepoSensei is a small AI-powered “codebase mentor” that analyzes any public GitHub repository and explains:
+RepoSensei is an AI-powered codebase mentor that analyzes any public GitHub repository and explains:
 
-- what it does,
-- how it’s structured,
-- key modules,
-- critical execution flows,
-- and a Mermaid architecture diagram.
+- What it does
+- How it's structured
+- Key modules and their responsibilities
+- Critical execution flows
+- A Mermaid architecture diagram
+- An onboarding path for new developers
 
-Because we have all opened a new repo and thought:
-**“Where do I even start?”** 😭
-
-## Features
-
-- Repo URL → Architecture Walkthrough (JSON)
-- Module map + key files
-- 2–3 critical flows
-- Mermaid diagram
-- Onboarding path for new devs
-
-## Tech
-
-- FastAPI (Python)
-- Git clone + heuristic file selection
-- Local LLM via **Ollama** (default)
-- Optional OpenAI provider (toggle via `.env`)
+Because we have all opened a new repo and thought: **"Where do I even start ?"** 😭
 
 ---
 
-## Setup (Ollama - Recommended)
+## Features
 
-### 1) Install Ollama
+- Paste a GitHub URL: Get a full architecture breakdown
+- Structured JSON report or Markdown document
+- Module map with key files
+- Critical user flows with file references
+- Mermaid architecture diagram
+- Onboarding path for new devs
+- Suggested improvements grounded in the actual code
+- Works with any language or stack
 
-macOS:
+---
+
+## Tech
+
+- **FastAPI** (Python backend)
+- **Ollama**: local LLM, free, no API key needed (default)
+- **Gemini**: Google's API, free tier available
+- Git clone + heuristic file selection + signal extraction
+
+---
+
+## Quickstart
+
+### 1. Install Ollama
 
 ```bash
 brew install ollama
-ollama serve
 ```
 
-### 2) Pull a model
+### 2. Pull a model
+
+**16GB RAM (recommended):**
+
+```bash
+ollama pull qwen2.5:14b-instruct
+```
+
+**8GB RAM:**
 
 ```bash
 ollama pull qwen2.5:7b-instruct
 ```
 
-# or
+### 3. Configure environment
 
 ```bash
-ollama pull llama3.1:8b
-```
-
-### 3) Run RepoSensei
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
 cp .env.example .env
-uvicorn app:app --reload --port 8000
 ```
 
-### 4) Open docs
+For Ollama (default), your `.env` should look like:
 
-- http://127.0.0.1:8000/docs
-
-### 5) Test
-
-- Here I am referring fastapi repository as an example.
-
-```bash
-curl -X POST http://127.0.0.1:8000/analyze \
-  -H "Content-Type: application/json" \
-  -d '{"repo_url":"https://github.com/tiangolo/fastapi"}'
+```
+LLM_PROVIDER=ollama
+OLLAMA_HOST=http://127.0.0.1:11434
+OLLAMA_MODEL=qwen2.5:14b-instruct
+RESPONSE_MODE=strict
 ```
 
-### 6) Switching to OpenAI (Optional)
-
-- Set in .env
+### 4. Run
 
 ```bash
-LLM_PROVIDER=openai
-OPENAI_API_KEY=YOUR_KEY
-OPENAI_MODEL=gpt-4.1-mini
+./start.sh
+```
+
+That's it. The script will:
+
+- Start Ollama automatically
+- Install dependencies if needed
+- Start the backend
+- Open the browser at `http://127.0.0.1:8000`
+
+Press `Ctrl+C` to stop everything.
+
+---
+
+## Using Gemini (Free Tier)
+
+1. Get a free API key at [aistudio.google.com](https://aistudio.google.com)
+2. Update `.env`:
+
+```
+LLM_PROVIDER=gemini
+GEMINI_API_KEY=your-key-here
+GEMINI_MODEL=gemini-2.0-flash
+```
+
+3. Run as usual:
+
+```bash
+./start.sh
+```
+
+---
+
+## Response Modes
+
+Set `RESPONSE_MODE` in `.env`:
+
+| Mode               | Behaviour                                                             |
+| ------------------ | --------------------------------------------------------------------- |
+| `strict` (default) | Never invent routes or features, only states what's evidenced in code |
+| `helpful`          | May suggest likely flows, clearly labeled as "Likely"                 |
+
+---
+
+## API Endpoints
+
+| Endpoint           | Method | Description                              |
+| ------------------ | ------ | ---------------------------------------- |
+| `/`                | GET    | Web UI                                   |
+| `/analyze`         | POST   | Returns a structured JSON report         |
+| `/architecture-md` | POST   | Returns a Markdown architecture document |
+| `/health`          | GET    | Health check                             |
+
+**Example request:**
+
+```json
+{
+  "repo_url": "https://github.com/user/repo"
+}
 ```

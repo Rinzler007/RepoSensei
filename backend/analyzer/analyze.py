@@ -7,10 +7,10 @@ from pathlib import Path
 from dotenv import load_dotenv
 from git import Repo
 
-from reposensei.llm import LLMProvider, OllamaProvider, OpenAIProvider
-from reposensei.schemas import RepoReport
-from reposensei.signals import build_signals
-from reposensei.utils import build_tree, pick_important_files, read_files
+from backend.llm import LLMProvider, OllamaProvider, GeminiProvider
+from backend.schemas import RepoReport
+from backend.signals import build_signals
+from backend.utils import build_tree, pick_important_files, read_files
 
 load_dotenv()
 
@@ -30,8 +30,18 @@ def _sanitize_report_dict(data: dict, signals: dict, mode: str) -> dict:
         return data
 
     # --- Tech stack sanitization ---
-    allowed_stack = set(signals.get("languages", [])) | set(signals.get("framework_hints", []))
-    allowed_stack |= {"HTML", "CSS", "JavaScript", "TypeScript"}
+    langs_lower = {lang.lower() for lang in signals.get("languages", [])}
+    deps_lower = set(signals.get("dependencies", []))  # already lowercased by extractor
+    # Always allow core web/data techs by name fragment
+    always_allowed = {
+        "html", "css", "sql", "json", "yaml", "xml", "graphql", "rest", "grpc", "websocket",
+        # Mobile frameworks
+        "flutter", "firebase", "react native", "expo",
+        # Common frameworks (not always in deps by exact name)
+        "django", "flask", "fastapi", "rails", "laravel", "spring", "express",
+        "nextjs", "nuxt", "svelte", "angular", "vue", "react",
+        "android", "ios", "swiftui", "jetpack",
+    }
 
     tech_stack = data.get("tech_stack", [])
     if isinstance(tech_stack, list):
@@ -40,16 +50,27 @@ def _sanitize_report_dict(data: dict, signals: dict, mode: str) -> dict:
             if not isinstance(t, str):
                 continue
             ts = t.strip()
-            low = ts.lower()
+            ts_low = ts.lower()
 
-            if low in {"html/css/js", "html/css", "html"}:
-                cleaned.extend(["HTML", "CSS", "JavaScript"])
+            # Allow if it matches a detected language
+            if ts_low in langs_lower:
+                cleaned.append(ts)
                 continue
 
-            if ts in allowed_stack:
+            # Allow if name fragment matches always_allowed
+            if any(a in ts_low for a in always_allowed):
                 cleaned.append(ts)
+                continue
 
-        seen = set()
+            # Allow if any dep name is a substring of ts or vice versa (fuzzy)
+            if any(dep in ts_low or ts_low in dep for dep in deps_lower):
+                cleaned.append(ts)
+                continue
+
+            # No evidence at all — strip it
+            # (Only happens when LLM hallucinates something with zero grounding)
+
+        seen: set[str] = set()
         out: list[str] = []
         for x in cleaned:
             if x not in seen:
@@ -59,7 +80,6 @@ def _sanitize_report_dict(data: dict, signals: dict, mode: str) -> dict:
 
     # --- Route / endpoint sanitization ---
     allowed_routes = set(signals.get("routes_sample", []))
-    no_route_evidence = len(allowed_routes) == 0
 
     def scrub_step(step: str) -> str:
         def repl_route(m: re.Match) -> str:
@@ -68,34 +88,7 @@ def _sanitize_report_dict(data: dict, signals: dict, mode: str) -> dict:
                 return m.group(0)
             return m.group(1) + "(route not confirmed in code)"
 
-        step2 = _ROUTE_LIKE.sub(repl_route, step)
-
-        if no_route_evidence:
-            return step2
-
-        # Scrub endpoint-ish snake_case tokens BUT NEVER inside file paths/templates.
-        parts = step2.split()
-        cleaned_parts: list[str] = []
-
-        for tok in parts:
-            lowtok = tok.lower()
-
-            # Skip paths/files
-            if ("/" in tok) or lowtok.endswith(
-                (".py", ".html", ".md", ".js", ".ts", ".tsx", ".go", ".java", ".kt")
-            ):
-                cleaned_parts.append(tok)
-                continue
-
-            if "_" in tok and len(tok) >= 8:
-                if any(tok in r for r in allowed_routes):
-                    cleaned_parts.append(tok)
-                else:
-                    cleaned_parts.append("not_confirmed_endpoint")
-            else:
-                cleaned_parts.append(tok)
-
-        return " ".join(cleaned_parts)
+        return _ROUTE_LIKE.sub(repl_route, step)
 
     flows = data.get("critical_flows", [])
     if isinstance(flows, list):
@@ -156,12 +149,12 @@ def _extract_json(text: str) -> dict:
 def _get_provider(model_override: str | None = None) -> tuple[LLMProvider, str]:
     provider_name = (os.getenv("LLM_PROVIDER") or "ollama").strip().lower()
 
-    if provider_name == "openai":
-        api_key = (os.getenv("OPENAI_API_KEY") or "").strip()
+    if provider_name == "gemini":
+        api_key = (os.getenv("GEMINI_API_KEY") or "").strip()
         if not api_key:
-            raise RuntimeError("LLM_PROVIDER=openai but OPENAI_API_KEY is not set.")
-        model = model_override or (os.getenv("OPENAI_MODEL") or "gpt-4.1-mini")
-        return OpenAIProvider(api_key=api_key, model=model), model
+            raise RuntimeError("LLM_PROVIDER=gemini but GEMINI_API_KEY is not set.")
+        model = model_override or (os.getenv("GEMINI_MODEL") or "gemini-2.0-flash")
+        return GeminiProvider(api_key=api_key, model=model), model
 
     host = os.getenv("OLLAMA_HOST") or "http://127.0.0.1:11434"
     model = model_override or (os.getenv("OLLAMA_MODEL") or "qwen2.5:7b-instruct")
